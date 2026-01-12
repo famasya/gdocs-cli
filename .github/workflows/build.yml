@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os:
+          - linux
+          - windows
+          - darwin
+        arch:
+          - amd64
+          - arm64
+        include:
+          - os: linux
+            arch: arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+        run: |
+          binary_name="gdocs-cli"
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            binary_name="${binary_name}.exe"
+          fi
+          go build -o "${binary_name}" ./cmd/gdocs-cli
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdocs-cli-${{ matrix.os }}-${{ matrix.arch }}
+          path: gdocs-cli
+          if-no-files-found: error
+
+      - name: Create Release
+        if: github.ref == format('refs/tags/{0}', github.event.release.tag_name)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: gdocs-cli*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
