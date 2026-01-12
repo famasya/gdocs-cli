@@ -1,0 +1,11 @@
+## Google Docs Integration
+
+Fetch Google Docs as markdown:
+
+```bash
+gdocs-cli --url="<google-docs-url>" --clean
+gdocs-cli --url="<url>" --clean > spec.md
+gdocs-cli --url="<url>" --clean | head -50
+```
+
+Token expired? Run `gdocs-cli --init`

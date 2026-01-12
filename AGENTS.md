@@ -1,277 +1,143 @@
-# Using gdocs-cli with AI Coding Agents
+# CLAUDE.md
 
-This guide explains how to integrate `gdocs-cli` into AI coding agent workflows to fetch and process Google Docs documentation.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Why This Tool for AI Agents?
+## Project Overview
 
-This CLI is specifically designed for AI coding agents that need to:
-- Fetch technical documentation from Google Docs
-- Convert documentation to markdown for analysis
-- Integrate Google Docs content into their knowledge base
-- Process documentation as part of their coding workflow
+This is a CLI tool that fetches Google Docs via the Google Docs API and converts them to Markdown with YAML frontmatter. It uses OAuth2 authentication with token caching for user authorization.
 
-## Quick Setup for AI Agents
+**Primary Use Case**: This tool is designed for AI coding agents to fetch Google Docs documentation and convert it to markdown for analysis, context gathering, or integration into AI workflows. The clean markdown output and stdout design make it ideal for piping into AI systems.
 
-### 1. One-Time Setup
+**📖 For comprehensive integration guide, see [INSTRUCTION.md](INSTRUCTION.md)** - This file contains detailed instructions for integrating this tool with various AI coding agents (Claude Code, Aider, Cursor, MCP servers, etc.).
+
+## Build and Test Commands
 
 ```bash
-# Install the tool
-go install github.com/famasya/gdocs-cli/cmd/gdocs-cli@latest
-
-# Or build from source
-git clone https://github.com/famasya/gdocs-cli.git
-cd gdocs-cli
+# Build the CLI binary
 go build -o gdocs-cli cmd/gdocs-cli/main.go
-sudo mv gdocs-cli /usr/local/bin/  # Make it globally available
 
-# Set up credentials in default location
-mkdir -p ~/.config/gdocs-cli
-cp your-oauth-credentials.json ~/.config/gdocs-cli/config.json
+# Run all tests
+go test ./...
 
-# Initialize OAuth authentication (opens browser once)
-gdocs-cli --init
+# Run tests with coverage
+go test ./... -cover
+
+# Run tests with verbose output
+go test ./... -v
+
+# Run specific package tests
+go test ./internal/gdocs -v
+go test ./internal/markdown -v
+go test ./internal/auth -v
+go test ./cmd/gdocs-cli -v
+
+# Run a single test
+go test ./internal/gdocs -run TestExtractDocumentID -v
+
+# Clean up dependencies
+go mod tidy
 ```
 
-After this one-time setup, the agent can use the tool without any authentication steps.
+## Architecture
 
-### 2. Basic Usage in Agent Context
+### Data Flow
 
-Once configured, agents can simply run:
-
-```bash
-gdocs-cli --url="https://docs.google.com/document/d/DOC_ID/edit" --clean
+```
+User Input (URL + credentials)
+    ↓
+main.go (CLI parsing & orchestration)
+    ↓
+auth/oauth.go (OAuth2 flow & token caching)
+    ↓
+gdocs/client.go (Google Docs API client)
+    ↓
+gdocs/url.go (Extract doc ID from URL)
+    ↓
+client.FetchDocument() → Returns *docs.Document
+    ↓
+markdown/converter.go (Main orchestrator)
+    ↓
+    ├→ markdown/frontmatter.go (YAML metadata)
+    ├→ markdown/structure.go (headings, lists, tables)
+    └→ markdown/text.go (bold, italic, links)
+    ↓
+Markdown output to stdout
 ```
 
-This outputs clean markdown to stdout with:
-- No log messages (thanks to `--clean`)
-- YAML frontmatter with document metadata
-- Properly formatted markdown content
-- All text formatting preserved (bold, italic, links, etc.)
+### Key Architectural Decisions
 
-## Integration Patterns
+1. **OAuth2 Token Caching**: Tokens are cached at `~/.config/gdocs-cli/token.json` to avoid repeated browser authentication. The `auth` package handles both initial authentication and automatic token refresh.
 
-### Pattern 1: Direct Context Injection
+2. **Structural Element Processing**: Google Docs API returns a tree of `StructuralElement` objects (paragraphs, tables, etc.). The converter iterates through `doc.Body.Content` and dispatches to specialized functions based on element type.
 
-Fetch documentation and use it directly in the agent's context:
+3. **Text Style Application**: Text formatting is applied at the `TextRun` level. Each paragraph contains multiple `ParagraphElement` objects, which may contain `TextRun` objects with `TextStyle` properties (bold, italic, link, etc.).
 
-```bash
-# Fetch and store in variable
-DOCS=$(gdocs-cli --url="https://docs.google.com/document/d/DOC_ID/edit" --clean)
+4. **List Handling**: Lists in Google Docs API are complex - each list item is a paragraph with a `Bullet` field containing `ListId` and `NestingLevel`. The converter uses indentation (2 spaces per level) to represent nesting.
 
-# Use in agent prompt
-echo "Here's the documentation: $DOCS"
+5. **Clean Flag**: The `--clean` flag suppresses logs by setting `log.SetOutput(io.Discard)`. Errors still go to stderr, but informational logs are silenced.
+
+### Package Responsibilities
+
+- **`cmd/gdocs-cli`**: CLI entry point, flag parsing, orchestration. No business logic here.
+- **`internal/auth`**: OAuth2 flow, token caching, credential loading. Handles all authentication concerns.
+- **`internal/gdocs`**: Google Docs API client wrapper and URL parsing. Fetches documents from the API.
+- **`internal/markdown`**: Conversion logic split into:
+  - `converter.go`: Main orchestrator that drives the conversion
+  - `frontmatter.go`: YAML frontmatter generation
+  - `text.go`: Text-level formatting (bold, italic, links)
+  - `structure.go`: Document structure (headings, lists, tables, paragraphs)
+
+### Google Docs API Structure
+
+Understanding the Google Docs API structure is critical:
+
+```
+docs.Document
+  ├─ Title (string)
+  ├─ Body
+  │   └─ Content []StructuralElement
+  │       ├─ Paragraph
+  │       │   ├─ Elements []ParagraphElement
+  │       │   │   └─ TextRun
+  │       │   │       ├─ Content (string)
+  │       │   │       └─ TextStyle (Bold, Italic, Link, etc.)
+  │       │   ├─ ParagraphStyle (NamedStyleType: HEADING_1, NORMAL_TEXT, etc.)
+  │       │   └─ Bullet (ListId, NestingLevel)
+  │       └─ Table
+  │           └─ TableRows []TableRow
+  │               └─ TableCells []TableCell
+  │                   └─ Content []StructuralElement (recursive)
+  └─ Lists map[string]*List (list metadata by ListId)
 ```
 
-### Pattern 2: Save to File for Processing
+When adding support for new Google Docs features:
+1. Check the `StructuralElement` type in `converter.go`
+2. Add a new handler function in `structure.go` if it's structural
+3. Add formatting logic in `text.go` if it's text-level
+4. Update tests to cover the new feature
 
-```bash
-# Fetch and save to file
-gdocs-cli --url="https://docs.google.com/document/d/DOC_ID/edit" --clean > docs/api-spec.md
+### Testing Strategy
 
-# Agent can now read the markdown file
-```
+- **Unit tests** (`*_test.go` in each package): Test individual functions with mocked Google Docs API structures
+- **Integration tests** (`cmd/gdocs-cli/main_test.go`): Build and execute the binary as a subprocess to test end-to-end flows
+- Integration tests don't show in coverage reports because they run the binary externally, but they ensure the CLI works correctly from a user perspective
 
-### Pattern 3: Multiple Documents
+### CLI Flags
 
-```bash
-# Fetch multiple related documents
-gdocs-cli --url="https://docs.google.com/document/d/DOC1/edit" --clean > architecture.md
-gdocs-cli --url="https://docs.google.com/document/d/DOC2/edit" --clean > api-reference.md
-gdocs-cli --url="https://docs.google.com/document/d/DOC3/edit" --clean > deployment-guide.md
+- `--url`: Google Docs URL (required for normal operation)
+- `--config`: Path to OAuth2 credentials JSON (defaults to `~/.config/gdocs-cli/config.json`)
+- `--init`: Initialize OAuth and save token (doesn't require --url)
+- `--clean`: Suppress all logs, only output markdown
+- `--instruction`: Print integration instructions for AI coding agents
 
-# Agent now has complete documentation set
-```
+**Default Config Path**: If `--config` is not provided, the tool automatically looks for credentials at `~/.config/gdocs-cli/config.json`. This is particularly useful for AI agents that can set up credentials once and then use the tool without specifying the path on every invocation.
 
-### Pattern 4: Piped Processing
+The `--clean` flag is particularly important for AI agents and scripting - it ensures only markdown goes to stdout, making it easy to pipe the output directly into AI systems or other tools.
 
-```bash
-# Fetch and pipe to other tools
-gdocs-cli --url="..." --clean | grep "TODO" | wc -l  # Count TODOs
-gdocs-cli --url="..." --clean | head -50            # Get first 50 lines
-gdocs-cli --url="..." --clean | pandoc -f markdown -t html  # Convert to HTML
-```
+### Token Refresh
 
-## MCP Server Integration
+OAuth2 tokens expire. The `auth` package uses `oauth2.TokenSource` which automatically refreshes tokens when they expire. The refreshed token is saved back to the cache file. If refresh fails (e.g., token revoked), the user must re-authenticate with `--init`.
 
-For Model Context Protocol (MCP) servers, this tool can be wrapped as a resource provider:
+### Error Handling
 
-```json
-{
-  "mcpServers": {
-    "gdocs": {
-      "command": "gdocs-cli",
-      "args": ["--url", "${url}", "--clean"],
-      "env": {
-        "HOME": "${HOME}"
-      }
-    }
-  }
-}
-```
-
-The MCP server can then expose Google Docs as readable resources to the agent.
-
-## Claude Code Integration
-
-### As a Tool in Claude Code Context
-
-When working with Claude Code (claude.ai/code), you can add this to your project's context:
-
-**In `.claudeignore` or project instructions:**
-```
-This project uses gdocs-cli to fetch documentation from Google Docs.
-
-To fetch documentation:
-gdocs-cli --url="<google-docs-url>" --clean
-
-Common documentation sources:
-- Architecture: https://docs.google.com/document/d/DOC1/edit
-- API Specs: https://docs.google.com/document/d/DOC2/edit
-- Deployment: https://docs.google.com/document/d/DOC3/edit
-```
-
-### Example Claude Code Workflow
-
-```bash
-# 1. Fetch latest documentation
-gdocs-cli --url="https://docs.google.com/document/d/API-SPEC/edit" --clean > api-spec.md
-
-# 2. Ask Claude Code to analyze
-# "Read api-spec.md and implement the POST /users endpoint according to the spec"
-
-# 3. Update docs when implementation is done
-# "Update the Google Doc at <url> with the new endpoint details"
-# (Note: This tool is read-only, manual update needed)
-```
-
-## Aider Integration
-
-For [Aider](https://github.com/paul-gauthier/aider) users:
-
-```bash
-# Start Aider with fetched documentation
-gdocs-cli --url="..." --clean > docs.md
-aider --read docs.md main.go
-
-# Or inline
-aider --read <(gdocs-cli --url="..." --clean) main.go
-```
-
-## Cursor / Windsurf Integration
-
-Add to `.cursorrules` or `.windsurfrules`:
-
-```markdown
-# Documentation Sources
-
-This project's documentation is stored in Google Docs. Fetch using:
-
-```bash
-gdocs-cli --url="<doc-url>" --clean
-```
-
-Key documents:
-- Architecture: [DOC_ID_1]
-- API Reference: [DOC_ID_2]
-```
-
-## Environment Variables (Optional)
-
-For advanced setups, you can wrap the tool with environment variables:
-
-```bash
-# Create a wrapper script: ~/bin/fetch-docs
-#!/bin/bash
-export GDOCS_DEFAULT_URL="https://docs.google.com/document/d/YOUR-MAIN-DOC/edit"
-
-if [ -z "$1" ]; then
-  gdocs-cli --url="$GDOCS_DEFAULT_URL" --clean
-else
-  gdocs-cli --url="$1" --clean
-fi
-```
-
-Then agents can simply run:
-```bash
-fetch-docs  # Uses default doc
-fetch-docs "https://docs.google.com/document/d/OTHER-DOC/edit"  # Custom doc
-```
-
-## Troubleshooting for Agents
-
-### Token Expired
-If authentication fails, re-run:
-```bash
-gdocs-cli --init
-```
-
-### Permission Denied
-Ensure the Google Doc is shared with the Google account used for OAuth authentication.
-
-### Rate Limiting
-Google Docs API has rate limits. For high-volume usage, implement caching:
-
-```bash
-# Cache docs with timestamp
-CACHE_DIR="~/.cache/gdocs"
-DOC_ID="extracted-from-url"
-CACHE_FILE="$CACHE_DIR/$DOC_ID.md"
-CACHE_TIME=3600  # 1 hour
-
-if [ ! -f "$CACHE_FILE" ] || [ $(find "$CACHE_FILE" -mmin +60) ]; then
-  gdocs-cli --url="..." --clean > "$CACHE_FILE"
-fi
-
-cat "$CACHE_FILE"
-```
-
-## Best Practices
-
-1. **Use `--clean` flag always** - Ensures only markdown output for easy parsing
-2. **Cache frequently accessed docs** - Avoid hitting API rate limits
-3. **Set up default config** - Use `~/.config/gdocs-cli/config.json` for seamless access
-4. **Document your doc URLs** - Keep a list of important documentation sources
-5. **Version control output** - Commit fetched markdown files to track doc changes over time
-6. **Handle errors gracefully** - Check exit codes and stderr for error messages
-
-## Output Format
-
-The tool outputs markdown with YAML frontmatter:
-
-```markdown
----
-title: Document Title
-author:
-created:
-modified:
----
-
-# Main Heading
-
-Content with **bold**, *italic*, and [links](https://example.com).
-
-- Bullet lists
-- Nested lists
-  - Sub-items
-
-## Tables
-
-| Header 1 | Header 2 |
-|----------|----------|
-| Cell 1   | Cell 2   |
-```
-
-This format is easily parseable by AI agents and integrates well with existing markdown tooling.
-
-## Security Considerations
-
-- **Credentials**: The OAuth credentials file contains sensitive information. Ensure it's properly secured.
-- **Token**: The cached token at `~/.config/gdocs-cli/token.json` provides access to Google Docs. Protect it with file permissions (0600).
-- **Scope**: This tool only requests `documents.readonly` scope - no write access.
-- **Sharing**: Ensure agents only access documents they should have permission to read.
-
-## Support
-
-For issues or questions:
-- GitHub Issues: https://github.com/famasya/gdocs-cli/issues
-- Documentation: See README.md and CLAUDE.md in the repository
+Errors are wrapped with context using `fmt.Errorf("context: %w", err)` to provide clear error chains. The main function prints errors to stderr and exits with non-zero codes. When adding new features, maintain this pattern for user-friendly error messages.

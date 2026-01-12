@@ -34,8 +34,10 @@ func TestCLIHelp(t *testing.T) {
 		"-config",
 		"-init",
 		"-clean",
+		"-instruction",
 		"Google Docs URL",
 		"OAuth credentials JSON file",
+		"integration instructions",
 	}
 
 	for _, expected := range expectedStrings {
@@ -201,6 +203,35 @@ func TestCLIMissingCredentialsFile(t *testing.T) {
 	outputStr := string(output)
 	if !strings.Contains(outputStr, "failed to read credentials file") {
 		t.Errorf("Expected error about credentials file, got: %s", outputStr)
+	}
+}
+
+// TestCLIInstructionFlag tests that the --instruction flag outputs integration instructions
+func TestCLIInstructionFlag(t *testing.T) {
+	buildCmd := exec.Command("go", "build", "-o", "gdocs-cli-test", ".")
+	if err := buildCmd.Run(); err != nil {
+		t.Fatalf("Failed to build CLI: %v", err)
+	}
+	defer os.Remove("gdocs-cli-test")
+
+	cmd := exec.Command("./gdocs-cli-test", "--instruction")
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		t.Errorf("--instruction flag should succeed, got error: %v", err)
+	}
+
+	outputStr := string(output)
+	expectedStrings := []string{
+		"Google Docs Integration",
+		"--clean",
+		"gdocs-cli --init",
+	}
+
+	for _, expected := range expectedStrings {
+		if !strings.Contains(outputStr, expected) {
+			t.Errorf("Instruction output missing expected string: %q", expected)
+		}
 	}
 }
 

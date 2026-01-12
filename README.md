@@ -169,6 +169,20 @@ This is useful when:
 ./gdocs-cli --url="..." --clean | your-ai-tool
 ```
 
+### Print Integration Instructions
+
+Use the `--instruction` flag to print instructions for integrating this tool with AI coding agents:
+
+```bash
+./gdocs-cli --instruction
+```
+
+**Quick Integration**: Add this one-liner to your project's `AGENTS.md`, `CLAUDE.md`, or MCP config:
+
+```
+This project uses gdocs-cli. Run `gdocs-cli --instruction` for usage.
+```
+
 ## Supported Google Docs Features
 
 ### Text Formatting

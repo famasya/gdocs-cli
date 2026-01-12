@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"flag"
 	"fmt"
 	"io"
@@ -13,13 +14,23 @@ import (
 	"github.com/famasya/gdocs-cli/internal/markdown"
 )
 
+//go:embed instruction.txt
+var instructionText string
+
 func main() {
 	// Define flags
 	urlFlag := flag.String("url", "", "Google Docs URL (required for normal operation)")
 	configFlag := flag.String("config", "", "Path to OAuth credentials JSON file (defaults to ~/.config/gdocs-cli/config.json)")
 	initFlag := flag.Bool("init", false, "Initialize OAuth and save token to default location")
 	cleanFlag := flag.Bool("clean", false, "Clean output (suppress all logs, only output markdown)")
+	instructionFlag := flag.Bool("instruction", false, "Print integration instructions for AI coding agents")
 	flag.Parse()
+
+	// Handle instruction mode - print instructions and exit
+	if *instructionFlag {
+		fmt.Print(instructionText)
+		return
+	}
 
 	// Handle clean mode - suppress all logs
 	if *cleanFlag {
