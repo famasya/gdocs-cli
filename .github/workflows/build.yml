@@ -38,13 +38,14 @@ jobs:
             binary_name="${binary_name}.exe"
           fi
           go build -o "${binary_name}" ./cmd/gdocs-cli
+          echo "BINARY_NAME=${binary_name}" >> $GITHUB_ENV
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: gdocs-cli-${{ matrix.os }}-${{ matrix.arch }}
-          path: gdocs-cli
-          if-no-files-found: error
+          path: ${{ env.BINARY_NAME }}
+          if-no-files-found: warn
 
       - name: Create Release
         if: github.ref == format('refs/tags/{0}', github.event.release.tag_name)

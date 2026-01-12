@@ -23,6 +23,28 @@ A command-line tool to fetch Google Docs content and convert it to Markdown with
 
 ## Installation
 
+### From Release Binaries
+
+Prebuilt binaries for Linux, macOS, and Windows are available on the [GitHub Releases](https://github.com/famasya/gdocs-cli/releases) page.
+
+```bash
+# Download and install the latest release for your platform
+# Linux (amd64)
+curl -L https://github.com/famasya/gdocs-cli/releases/latest/download/gdocs-cli-linux-amd64 -o gdocs-cli
+chmod +x gdocs-cli
+
+# macOS (Apple Silicon)
+curl -L https://github.com/famasya/gdocs-cli/releases/latest/download/gdocs-cli-darwin-arm64 -o gdocs-cli
+chmod +x gdocs-cli
+
+# macOS (Intel)
+curl -L https://github.com/famasya/gdocs-cli/releases/latest/download/gdocs-cli-darwin-amd64 -o gdocs-cli
+chmod +x gdocs-cli
+
+# Windows (PowerShell)
+Invoke-WebRequest -Uri "https://github.com/famasya/gdocs-cli/releases/latest/download/gdocs-cli-windows-amd64.exe" -OutFile "gdocs-cli.exe"
+```
+
 ### From Source
 
 ```bash
