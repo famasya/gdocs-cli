@@ -6,8 +6,6 @@ This is a CLI tool that fetches Google Docs via the Google Docs API and converts
 
 **Primary Use Case**: This tool is designed for AI coding agents to fetch Google Docs documentation and convert it to markdown for analysis, context gathering, or integration into AI workflows. The clean markdown output and stdout design make it ideal for piping into AI systems.
 
-**📖 For comprehensive integration guide, see [INSTRUCTION.md](INSTRUCTION.md)** - This file contains detailed instructions for integrating this tool with various AI coding agents (Claude Code, Aider, Cursor, MCP servers, etc.).
-
 ## Build and Test Commands
 
 ```bash
