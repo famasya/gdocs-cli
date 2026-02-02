@@ -117,6 +117,9 @@ func run(docURL, credPath string) error {
 		if tab == nil {
 			return fmt.Errorf("tab '%s' not found in document", tabID)
 		}
+		if tab.DocumentTab == nil || tab.DocumentTab.Body == nil {
+			return fmt.Errorf("tab '%s' has no document content", tabID)
+		}
 		tabTitle := tabID
 		if tab.TabProperties != nil {
 			tabTitle = tab.TabProperties.Title

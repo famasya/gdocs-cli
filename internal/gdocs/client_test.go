@@ -111,6 +111,20 @@ func TestFindTab_NilTabs(t *testing.T) {
 	}
 }
 
+func TestFindTab_NilDocument(t *testing.T) {
+	got := FindTab(nil, "t.any")
+	if got != nil {
+		t.Errorf("FindTab() with nil document = %v, want nil", got)
+	}
+}
+
+func TestGetFirstTab_NilDocument(t *testing.T) {
+	got := GetFirstTab(nil)
+	if got != nil {
+		t.Errorf("GetFirstTab() with nil document = %v, want nil", got)
+	}
+}
+
 func TestGetFirstTab(t *testing.T) {
 	tests := []struct {
 		name      string

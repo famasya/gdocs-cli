@@ -37,7 +37,7 @@ func (c *Client) FetchDocument(docID string) (*docs.Document, error) {
 // FindTab searches for a tab by ID in the document's tab tree.
 // Returns nil if the tab is not found.
 func FindTab(doc *docs.Document, tabID string) *docs.Tab {
-	if doc.Tabs == nil {
+	if doc == nil || doc.Tabs == nil {
 		return nil
 	}
 
@@ -71,7 +71,7 @@ func findTabRecursive(tab *docs.Tab, tabID string) *docs.Tab {
 // GetFirstTab returns the first tab in the document.
 // Returns nil if the document has no tabs.
 func GetFirstTab(doc *docs.Document) *docs.Tab {
-	if doc.Tabs == nil || len(doc.Tabs) == 0 {
+	if doc == nil || doc.Tabs == nil || len(doc.Tabs) == 0 {
 		return nil
 	}
 	return doc.Tabs[0]
