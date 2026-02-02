@@ -81,6 +81,9 @@ func run(docURL, credPath string) error {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
 
+	// Extract tab ID from URL (may be empty)
+	tabID := gdocs.ExtractTabID(docURL)
+
 	// Create authenticator
 	authenticator, err := auth.NewAuthenticator(credPath)
 	if err != nil {
@@ -107,7 +110,19 @@ func run(docURL, credPath string) error {
 	}
 
 	// Convert to markdown
-	converter := markdown.NewConverter(doc)
+	var converter *markdown.Converter
+	if tabID != "" {
+		// Find the specific tab
+		tab := gdocs.FindTab(doc, tabID)
+		if tab == nil {
+			return fmt.Errorf("tab '%s' not found in document", tabID)
+		}
+		log.Printf("Using tab: %s", tab.TabProperties.Title)
+		converter = markdown.NewConverterFromTab(doc, tab)
+	} else {
+		converter = markdown.NewConverter(doc)
+	}
+
 	markdownOutput, err := converter.Convert()
 	if err != nil {
 		return fmt.Errorf("conversion failed: %w", err)

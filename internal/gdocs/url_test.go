@@ -80,3 +80,51 @@ func TestExtractDocumentID(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractTabID(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{
+			name: "URL with tab parameter",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit?tab=t.v63b7x227gkk",
+			want: "t.v63b7x227gkk",
+		},
+		{
+			name: "URL with tab and other params",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit?usp=sharing&tab=t.abc123",
+			want: "t.abc123",
+		},
+		{
+			name: "URL with tab and heading anchor",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit?tab=t.v63b7x227gkk#heading=h.ehdxodmabfmp",
+			want: "t.v63b7x227gkk",
+		},
+		{
+			name: "URL without tab parameter",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit",
+			want: "",
+		},
+		{
+			name: "URL with only sharing param",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit?usp=sharing",
+			want: "",
+		},
+		{
+			name: "empty URL",
+			url:  "",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractTabID(tt.url)
+			if got != tt.want {
+				t.Errorf("ExtractTabID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

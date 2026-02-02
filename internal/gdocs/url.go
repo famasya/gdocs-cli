@@ -23,3 +23,19 @@ func ExtractDocumentID(url string) (string, error) {
 
 	return matches[1], nil
 }
+
+// ExtractTabID extracts the tab ID from a Google Docs URL if present.
+// Tab IDs appear in URLs as ?tab=t.{TAB_ID} or &tab=t.{TAB_ID}
+// Returns empty string if no tab ID is found.
+func ExtractTabID(url string) string {
+	// Regex pattern to match tab parameter (e.g., tab=t.v63b7x227gkk)
+	pattern := `[?&]tab=(t\.[a-zA-Z0-9]+)`
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindStringSubmatch(url)
+	if len(matches) < 2 {
+		return ""
+	}
+
+	return matches[1]
+}
