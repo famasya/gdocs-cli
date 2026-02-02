@@ -52,6 +52,9 @@ func FindTab(doc *docs.Document, tabID string) *docs.Tab {
 
 // findTabRecursive recursively searches for a tab by ID.
 func findTabRecursive(tab *docs.Tab, tabID string) *docs.Tab {
+	if tab == nil {
+		return nil
+	}
 	if tab.TabProperties != nil && tab.TabProperties.TabId == tabID {
 		return tab
 	}

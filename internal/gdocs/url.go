@@ -24,15 +24,15 @@ func ExtractDocumentID(url string) (string, error) {
 	return matches[1], nil
 }
 
+// tabIDPattern matches the tab query parameter in Google Docs URLs.
+// Captures the full tab value without assuming a specific format.
+var tabIDPattern = regexp.MustCompile(`[?&]tab=([^&#]+)`)
+
 // ExtractTabID extracts the tab ID from a Google Docs URL if present.
-// Tab IDs appear in URLs as ?tab=t.{TAB_ID} or &tab=t.{TAB_ID}
+// Tab IDs appear in URLs as ?tab={TAB_ID} or &tab={TAB_ID}
 // Returns empty string if no tab ID is found.
 func ExtractTabID(url string) string {
-	// Regex pattern to match tab parameter (e.g., tab=t.v63b7x227gkk)
-	pattern := `[?&]tab=(t\.[a-zA-Z0-9]+)`
-	re := regexp.MustCompile(pattern)
-
-	matches := re.FindStringSubmatch(url)
+	matches := tabIDPattern.FindStringSubmatch(url)
 	if len(matches) < 2 {
 		return ""
 	}

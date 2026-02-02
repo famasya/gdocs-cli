@@ -117,7 +117,11 @@ func run(docURL, credPath string) error {
 		if tab == nil {
 			return fmt.Errorf("tab '%s' not found in document", tabID)
 		}
-		log.Printf("Using tab: %s", tab.TabProperties.Title)
+		tabTitle := tabID
+		if tab.TabProperties != nil {
+			tabTitle = tab.TabProperties.Title
+		}
+		log.Printf("Using tab: %s", tabTitle)
 		converter = markdown.NewConverterFromTab(doc, tab)
 	} else {
 		converter = markdown.NewConverter(doc)

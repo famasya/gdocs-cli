@@ -103,6 +103,21 @@ func TestExtractTabID(t *testing.T) {
 			want: "t.v63b7x227gkk",
 		},
 		{
+			name: "URL with tab parameter with trailing params",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit?tab=t.abc123&other=value",
+			want: "t.abc123",
+		},
+		{
+			name: "URL with numeric tab ID",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit?tab=t.0",
+			want: "t.0",
+		},
+		{
+			name: "URL with non-standard tab format",
+			url:  "https://docs.google.com/document/d/1abc123xyz/edit?tab=custom-tab-id",
+			want: "custom-tab-id",
+		},
+		{
 			name: "URL without tab parameter",
 			url:  "https://docs.google.com/document/d/1abc123xyz/edit",
 			want: "",
