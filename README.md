@@ -144,6 +144,25 @@ The tool will automatically use the cached token - no browser interaction needed
 ./gdocs-cli --url="..." | grep "keyword"
 ```
 
+### Include Comments
+
+Use the `--comments` flag to include document comments in the markdown output:
+
+```bash
+./gdocs-cli --url="https://docs.google.com/document/d/YOUR_DOC_ID/edit" --comments
+```
+
+This appends a `## Comments` section at the end of the markdown with quoted text, author, date, and replies.
+
+> **⚠️ Important:** The `--comments` flag requires the `https://www.googleapis.com/auth/drive.readonly` scope. If you previously authenticated without this scope, you need to delete your cached token and re-authenticate:
+>
+> ```bash
+> rm ~/.config/gdocs-cli/token.json
+> ./gdocs-cli --init
+> ```
+>
+> Also make sure you don't have non-HTTPS redirect URIs in any of your Google OAuth clients, as Google requires HTTPS for the Drive API scope.
+
 ### Clean Output (Suppress Logs)
 
 Use the `--clean` flag to suppress all log output and only show the markdown:
@@ -211,7 +230,7 @@ modified: (if available)
 ---
 ```
 
-**Note:** The Google Docs API v1 doesn't provide author or date information. These fields may be empty unless fetched from Google Drive API.
+**Note:** The Google Docs API v1 doesn't provide author or date information for the document. These fields may be empty in the frontmatter unless fetched from Google Drive API. Comments are supported via `--comments` flag (see below).
 
 ## Known Limitations
 
@@ -219,8 +238,8 @@ modified: (if available)
 - **Images:** Inline images are not currently supported
 - **Drawings:** Not supported - will be skipped
 - **Equations:** Not supported - will be skipped
-- **Comments:** Not included in output (not in API response by default)
-- **Metadata:** Author and dates require Google Drive API (not implemented in this version)
+- **Comments:** Supported via `--comments` flag (requires Drive API scope, see below)
+- **Metadata:** Author and dates in frontmatter are not yet extracted (comments via Drive API are supported)
 
 ## Troubleshooting
 
@@ -334,7 +353,7 @@ go test ./internal/auth -v
 
 - **Credentials file:** Never commit your `credentials.json` to version control
 - **Token cache:** Tokens are stored in `~/.config/gdocs-cli/token.json` with 0600 permissions (read/write for owner only)
-- **OAuth scope:** The tool only requests `documents.readonly` scope - no write access
+- **OAuth scope:** The tool requests `documents.readonly` and `drive.readonly` scopes - no write access
 - **Config directory:** Created with 0700 permissions (accessible only by owner)
 
 ## License

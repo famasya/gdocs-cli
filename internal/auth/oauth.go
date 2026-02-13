@@ -20,6 +20,8 @@ const (
 
 	// Google Docs API scope for read-only access
 	docsScope = "https://www.googleapis.com/auth/documents.readonly"
+	// Google Drive API scope for read-only access (used for fetching comments)
+	driveReadonlyScope = "https://www.googleapis.com/auth/drive.readonly"
 )
 
 // Authenticator handles OAuth2 authentication for Google Docs API.
@@ -37,7 +39,7 @@ func NewAuthenticator(credPath string) (*Authenticator, error) {
 	}
 
 	// Parse credentials and create OAuth2 config
-	config, err := google.ConfigFromJSON(credBytes, docsScope)
+	config, err := google.ConfigFromJSON(credBytes, docsScope, driveReadonlyScope)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse credentials: %w", err)
 	}
