@@ -28,6 +28,7 @@ func ConvertComments(comments []gdocs.Comment) string {
 		if author == "" {
 			author = "Unknown"
 		}
+		author = escapeMarkdown(author)
 		builder.WriteString(fmt.Sprintf("**%s**", author))
 		if ts := formatTime(c.CreatedTime); ts != "" {
 			builder.WriteString(fmt.Sprintf(" (%s)", ts))
@@ -44,6 +45,7 @@ func ConvertComments(comments []gdocs.Comment) string {
 			if rAuthor == "" {
 				rAuthor = "Unknown"
 			}
+			rAuthor = escapeMarkdown(rAuthor)
 			builder.WriteString(fmt.Sprintf("  ↳ **%s**", rAuthor))
 			if ts := formatTime(r.CreatedTime); ts != "" {
 				builder.WriteString(fmt.Sprintf(" (%s)", ts))
@@ -69,4 +71,10 @@ func formatTime(rfc3339 string) string {
 		return ""
 	}
 	return t.Format("2006-01-02")
+}
+
+func escapeMarkdown(s string) string {
+	s = strings.ReplaceAll(s, "*", "\\*")
+	s = strings.ReplaceAll(s, "_", "\\_")
+	return s
 }

@@ -36,7 +36,7 @@ func FetchComments(ctx context.Context, httpClient *http.Client, docID string) (
 	var comments []Comment
 	pageToken := ""
 	for {
-		call := srv.Comments.List(docID).Fields("comments(author(displayName),content,quotedFileContent,createdTime,resolved,replies(author(displayName),content,createdTime)),nextPageToken").PageSize(100)
+		call := srv.Comments.List(docID).Fields("comments(author(displayName),content,quotedFileContent,createdTime,resolved,replies(author(displayName),content,createdTime)),nextPageToken").PageSize(100).Context(ctx)
 		if pageToken != "" {
 			call = call.PageToken(pageToken)
 		}

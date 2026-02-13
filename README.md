@@ -230,7 +230,7 @@ modified: (if available)
 ---
 ```
 
-**Note:** The Google Docs API v1 doesn't provide author or date information. These fields may be empty unless fetched from Google Drive API.
+**Note:** The Google Docs API v1 doesn't provide author or date information for the document. These fields may be empty in the frontmatter unless fetched from Google Drive API. Comments are supported via `--comments` flag (see below).
 
 ## Known Limitations
 
@@ -239,7 +239,7 @@ modified: (if available)
 - **Drawings:** Not supported - will be skipped
 - **Equations:** Not supported - will be skipped
 - **Comments:** Supported via `--comments` flag (requires Drive API scope, see below)
-- **Metadata:** Author and dates require Google Drive API (not implemented in this version)
+- **Metadata:** Author and dates in frontmatter are not yet extracted (comments via Drive API are supported)
 
 ## Troubleshooting
 

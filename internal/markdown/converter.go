@@ -77,6 +77,7 @@ func (c *Converter) Convert() (string, error) {
 
 	// Append comments if present
 	if len(c.comments) > 0 {
+		builder.WriteString("\n")
 		builder.WriteString(ConvertComments(c.comments))
 	}
 
