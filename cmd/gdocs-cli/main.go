@@ -23,6 +23,7 @@ func main() {
 	configFlag := flag.String("config", "", "Path to OAuth credentials JSON file (defaults to ~/.config/gdocs-cli/config.json)")
 	initFlag := flag.Bool("init", false, "Initialize OAuth and save token to default location")
 	cleanFlag := flag.Bool("clean", false, "Clean output (suppress all logs, only output markdown)")
+	commentsFlag := flag.Bool("comments", false, "Include document comments in the markdown output")
 	instructionFlag := flag.Bool("instruction", false, "Print integration instructions for AI coding agents")
 	flag.Parse()
 
@@ -66,13 +67,13 @@ func main() {
 	}
 
 	// Run the main logic
-	if err := run(*urlFlag, configPath); err != nil {
+	if err := run(*urlFlag, configPath, *commentsFlag); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(docURL, credPath string) error {
+func run(docURL, credPath string, includeComments bool) error {
 	ctx := context.Background()
 
 	// Extract document ID from URL
@@ -128,6 +129,17 @@ func run(docURL, credPath string) error {
 		converter = markdown.NewConverterFromTab(doc, tab)
 	} else {
 		converter = markdown.NewConverter(doc)
+	}
+
+	// Fetch and attach comments if requested
+	if includeComments {
+		log.Println("Fetching comments...")
+		comments, err := gdocs.FetchComments(ctx, httpClient, docID)
+		if err != nil {
+			return fmt.Errorf("failed to fetch comments: %w", err)
+		}
+		log.Printf("Found %d comment(s)", len(comments))
+		converter.SetComments(comments)
 	}
 
 	markdownOutput, err := converter.Convert()

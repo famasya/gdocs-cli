@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/famasya/gdocs-cli/internal/gdocs"
 	"google.golang.org/api/docs/v1"
 )
 
 // Converter handles the conversion of Google Docs to markdown.
 type Converter struct {
-	doc     *docs.Document
-	body    *docs.Body
-	title   string
-	tabName string
+	doc      *docs.Document
+	body     *docs.Body
+	title    string
+	tabName  string
+	comments []gdocs.Comment
 }
 
 // NewConverter creates a new Converter for the given document.
@@ -50,6 +52,11 @@ func NewConverterFromTab(doc *docs.Document, tab *docs.Tab) *Converter {
 	return c
 }
 
+// SetComments sets the comments to be appended to the markdown output.
+func (c *Converter) SetComments(comments []gdocs.Comment) {
+	c.comments = comments
+}
+
 // Convert processes the entire document and returns markdown.
 func (c *Converter) Convert() (string, error) {
 	var builder strings.Builder
@@ -66,6 +73,11 @@ func (c *Converter) Convert() (string, error) {
 	if c.body != nil && c.body.Content != nil {
 		body := c.convertBody()
 		builder.WriteString(body)
+	}
+
+	// Append comments if present
+	if len(c.comments) > 0 {
+		builder.WriteString(ConvertComments(c.comments))
 	}
 
 	return builder.String(), nil

@@ -1,2 +1,4 @@
 credentials.json
 .claude/settings.local.json
+/gdocs
+/gdocs-cli
