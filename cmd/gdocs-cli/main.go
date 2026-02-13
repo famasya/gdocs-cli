@@ -73,6 +73,8 @@ func main() {
 	}
 }
 
+// run executes the main logic of the CLI.
+// It handles authentication, document fetching, and markdown conversion.
 func run(docURL, credPath string, includeComments bool) error {
 	ctx := context.Background()
 
