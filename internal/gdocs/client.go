@@ -76,3 +76,40 @@ func GetFirstTab(doc *docs.Document) *docs.Tab {
 	}
 	return doc.Tabs[0]
 }
+
+// TabInfo holds metadata about a tab for listing purposes.
+type TabInfo struct {
+	ID    string
+	Title string
+	Emoji string
+	Depth int
+}
+
+// ListTabs returns all tabs in the document as a flat list with depth info.
+func ListTabs(doc *docs.Document) []TabInfo {
+	if doc == nil || doc.Tabs == nil {
+		return nil
+	}
+
+	var tabs []TabInfo
+	for _, tab := range doc.Tabs {
+		collectTabs(tab, 0, &tabs)
+	}
+	return tabs
+}
+
+func collectTabs(tab *docs.Tab, depth int, tabs *[]TabInfo) {
+	if tab == nil {
+		return
+	}
+	info := TabInfo{Depth: depth}
+	if tab.TabProperties != nil {
+		info.ID = tab.TabProperties.TabId
+		info.Title = tab.TabProperties.Title
+		info.Emoji = tab.TabProperties.IconEmoji
+	}
+	*tabs = append(*tabs, info)
+	for _, child := range tab.ChildTabs {
+		collectTabs(child, depth+1, tabs)
+	}
+}

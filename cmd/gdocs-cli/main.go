@@ -24,6 +24,7 @@ func main() {
 	initFlag := flag.Bool("init", false, "Initialize OAuth and save token to default location")
 	cleanFlag := flag.Bool("clean", false, "Clean output (suppress all logs, only output markdown)")
 	commentsFlag := flag.Bool("comments", false, "Include document comments in the markdown output")
+	metaFlag := flag.Bool("meta", false, "Show document metadata (title, tabs) and exit")
 	instructionFlag := flag.Bool("instruction", false, "Print integration instructions for AI coding agents")
 	flag.Parse()
 
@@ -64,6 +65,15 @@ func main() {
 		fmt.Fprintln(os.Stderr)
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	// Handle meta mode
+	if *metaFlag {
+		if err := showMeta(*urlFlag, configPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	// Run the main logic
@@ -180,6 +190,60 @@ func initAuth(credPath string) error {
 	fmt.Println()
 	fmt.Println("You can now use the CLI without the --init flag:")
 	fmt.Println("  ./gdocs-cli --url=\"https://docs.google.com/document/d/DOC_ID/edit\"")
+
+	return nil
+}
+
+// showMeta fetches a document and prints metadata: title, ID, and tabs.
+func showMeta(docURL, credPath string) error {
+	ctx := context.Background()
+
+	docID, err := gdocs.ExtractDocumentID(docURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL: %w", err)
+	}
+
+	authenticator, err := auth.NewAuthenticator(credPath)
+	if err != nil {
+		return fmt.Errorf("authentication setup failed: %w", err)
+	}
+
+	httpClient, err := authenticator.GetClient(ctx)
+	if err != nil {
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	client, err := gdocs.NewClient(ctx, httpClient)
+	if err != nil {
+		return fmt.Errorf("failed to create Docs client: %w", err)
+	}
+
+	doc, err := client.FetchDocument(docID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch document: %w", err)
+	}
+
+	fmt.Printf("Title:       %s\n", doc.Title)
+	fmt.Printf("Document ID: %s\n", doc.DocumentId)
+	if doc.RevisionId != "" {
+		fmt.Printf("Revision ID: %s\n", doc.RevisionId)
+	}
+
+	tabs := gdocs.ListTabs(doc)
+	if len(tabs) > 0 {
+		fmt.Printf("\nTabs (%d):\n", len(tabs))
+		for _, tab := range tabs {
+			indent := ""
+			for i := 0; i < tab.Depth; i++ {
+				indent += "  "
+			}
+			emoji := ""
+			if tab.Emoji != "" {
+				emoji = tab.Emoji + " "
+			}
+			fmt.Printf("  %s%s%s\t(tab=%s)\n", indent, emoji, tab.Title, tab.ID)
+		}
+	}
 
 	return nil
 }
